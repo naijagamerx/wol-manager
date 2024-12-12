@@ -198,6 +198,7 @@ class WoLManager:
                             mac_bytes = data[6:12]
                             mac_str = ':'.join(f'{b:02x}' for b in mac_bytes)
                             
+
                             if not target_mac or mac_str.lower() == target_mac.lower():
                                 timestamp = datetime.now().strftime('%H:%M:%S')
                                 print(f"[{timestamp}] WoL Packet Received!")
@@ -243,10 +244,13 @@ class WoLManager:
             print("4 │ Start Packet Monitor")
             print("5 │ Start Web Interface")
             print("6 │ Configure BIOS/UEFI Settings Guide")
-            print("7 │ Exit")
+            print("7 │ Check WoL Configuration")
+            print("8 │ Check BIOS Settings")
+            print("9 │ Configure All WoL Settings")
+            print("10 │ Exit")
             print("\n" + "─" * 50)
             
-            choice = input("\nEnter your choice (1-7): ")
+            choice = input("\nEnter your choice (1-10): ")
             
             if choice == '1':
                 network_info = self.get_network_info()
@@ -329,11 +333,346 @@ class WoLManager:
                 input("\nPress Enter to continue...")
                 
             elif choice == '7':
+                self.check_wol_configuration()
+            elif choice == '8':
+                self.check_bios_settings()
+            elif choice == '9':
+                self.configure_wol_settings()
+            elif choice == '10':
                 print("\nExiting...")
                 self.is_monitoring = False
                 if self.monitor_thread and self.monitor_thread.is_alive():
                     self.monitor_thread.join()
                 sys.exit(0)
+
+    def check_bios_settings(self):
+        """Check BIOS settings related to Wake-on-LAN using PowerShell."""
+        print("\n" + "="*50)
+        print("CHECKING BIOS/UEFI SETTINGS")
+        print("="*50 + "\n")
+
+        try:
+            # Get BIOS information using PowerShell
+            print("\n[1] BIOS Information:")
+            print("-" * 20)
+            bios_info = subprocess.check_output(
+                ["powershell", "Get-WmiObject -Class Win32_BIOS | Format-List Manufacturer,Name,Version,SerialNumber"],
+                text=True
+            )
+            print(bios_info)
+            input("Press Enter to continue to power settings...")
+
+            # Get power settings related to Wake-on-LAN
+            print("\n[2] Power Settings Related to Wake:")
+            print("-" * 20)
+            
+            # Get current power scheme
+            current_scheme = subprocess.check_output(
+                ["powershell", "powercfg /getactivescheme"],
+                text=True
+            ).strip()
+            print("Current Power Scheme:", current_scheme)
+            
+            # Get network adapter settings using registry and advanced queries
+            print("\nNetwork Adapter Settings:")
+            power_settings = subprocess.check_output(
+                ["powershell", """
+                $adapters = Get-NetAdapter | Where-Object {$_.Status -eq 'Up'}
+                foreach ($adapter in $adapters) {
+                    Write-Output "`nAdapter: $($adapter.Name)"
+                    Write-Output "Status: $($adapter.Status)"
+                    Write-Output "Media Type: $($adapter.MediaType)"
+                    Write-Output "Interface Description: $($adapter.InterfaceDescription)"
+                    
+                    # Check registry for Wake-on-LAN settings
+                    $adapterRegPath = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Class\\{4d36e972-e325-11ce-bfc1-08002be10318}"
+                    Get-ChildItem $adapterRegPath | ForEach-Object {
+                        $regPath = $_.PSPath
+                        $description = (Get-ItemProperty -Path $regPath).DriverDesc
+                        if ($description -eq $adapter.InterfaceDescription) {
+                            $wolMagicPacket = (Get-ItemProperty -Path $regPath).WolMagicPacket
+                            $pmARPOffload = (Get-ItemProperty -Path $regPath).PMARPOffload
+                            $pmNSOffload = (Get-ItemProperty -Path $regPath).PMNSOffload
+                            $pmWakeOnPattern = (Get-ItemProperty -Path $regPath).WakeOnPattern
+                            
+                            Write-Output "`nWake-on-LAN Settings:"
+                            Write-Output "  Wake on Magic Packet: $wolMagicPacket"
+                            Write-Output "  PM ARP Offload: $pmARPOffload"
+                            Write-Output "  PM NS Offload: $pmNSOffload"
+                            Write-Output "  Wake on Pattern: $pmWakeOnPattern"
+                        }
+                    }
+                    Write-Output "-----------------"
+                }"""],
+                text=True
+            )
+            print(power_settings)
+            
+            # Get device wake capabilities
+            print("\n[3] System Wake Capabilities:")
+            print("-" * 20)
+            wake_status = subprocess.check_output(
+                ["powershell", """
+                Write-Output "Devices that can wake the system:"
+                $wakeDevices = powercfg /devicequery wake_armed
+                $wakeDevices | ForEach-Object {
+                    Write-Output "  * $_"
+                }
+                
+                Write-Output "`nPower Settings Status:"
+                # Check if Fast Startup is enabled
+                $fastStartup = Get-ItemProperty "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power" -Name HiberbootEnabled -ErrorAction SilentlyContinue
+                Write-Output "  Fast Startup: $(if ($fastStartup.HiberbootEnabled -eq 1) { 'Enabled' } else { 'Disabled' })"
+                
+                # Check network adapter wake settings
+                Write-Output "`nNetwork Adapter Wake Status:"
+                Get-WmiObject MSPower_DeviceWakeEnable -Namespace root/wmi | ForEach-Object {
+                    $status = if ($_.Enable) { "Enabled" } else { "Disabled" }
+                    Write-Output "  * Wake capability: $status"
+                }"""],
+                text=True
+            )
+            print(wake_status)
+            
+            print("\nBIOS Settings Check Complete!")
+            print("=" * 50)
+            
+            # Print recommendations
+            print("\nRecommendations:")
+            print("-" * 20)
+            print("1. Ensure 'Wake on Magic Packet' is enabled in network adapter settings")
+            print("2. If Wake-on-LAN isn't working, check if Fast Startup is disabled")
+            print("3. Verify that your network adapter is listed in 'Devices that can wake the system'")
+            print("4. In BIOS/UEFI settings, ensure:")
+            print("   - Power On By PCI-E/PCI is enabled")
+            print("   - Deep Sleep Control is disabled")
+            print("   - EuP/ErP Ready is disabled")
+            
+            input("\nPress Enter to return to main menu...")
+
+        except subprocess.CalledProcessError as e:
+            print(f"\nError checking settings: {e}")
+            input("\nPress Enter to continue...")
+            return False
+        except Exception as e:
+            print(f"\nUnexpected error: {e}")
+            input("\nPress Enter to continue...")
+            return False
+
+        return True
+
+    def check_wol_configuration(self):
+        """Perform a comprehensive check of Wake-on-LAN configuration."""
+        print("\n=== Wake-on-LAN Configuration Check ===\n")
+        
+        issues_found = []
+        recommendations = []
+        
+        # Check Network Adapter Settings
+        try:
+            # Use PowerShell to get detailed network adapter settings
+            ps_command = """
+            Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object {
+                $adapter = $_
+                $pm = Get-NetAdapterPowerManagement -Name $adapter.Name
+                Write-Output "Adapter: $($adapter.Name)"
+                Write-Output "WakeOnMagicPacket: $($pm.WakeOnMagicPacket)"
+                Write-Output "WakeOnPattern: $($pm.WakeOnPattern)"
+                Write-Output "DeviceSleepOnDisconnect: $($pm.DeviceSleepOnDisconnect)"
+            }
+            """
+            result = subprocess.run(["powershell", "-Command", ps_command], 
+                                 capture_output=True, text=True, check=True)
+            
+            print("Network Adapter Settings:")
+            print(result.stdout)
+            
+            if "Disabled" in result.stdout:
+                issues_found.append("Wake-on-LAN is disabled in network adapter settings")
+                recommendations.append(
+                    "Enable WoL in Device Manager:\n"
+                    "1. Open Device Manager\n"
+                    "2. Find your network adapter\n"
+                    "3. Right-click → Properties\n"
+                    "4. Go to 'Power Management' tab\n"
+                    "5. Check 'Allow this device to wake the computer'\n"
+                    "6. Check 'Only allow a magic packet to wake the computer'"
+                )
+        except Exception as e:
+            print(f"Could not check network adapter settings: {e}")
+        
+        # Check if running on battery (for laptops)
+        if hasattr(psutil, "sensors_battery"):
+            try:
+                battery = psutil.sensors_battery()
+                if battery and not battery.power_plugged:
+                    issues_found.append("Running on battery power")
+                    recommendations.append(
+                        "Connect your laptop to AC power. WoL might not work on battery power."
+                    )
+            except:
+                pass
+        
+        # Check network connection type
+        try:
+            ps_command = """
+            Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Select-Object Name, InterfaceDescription, MediaType
+            """
+            result = subprocess.run(["powershell", "-Command", ps_command], 
+                                 capture_output=True, text=True, check=True)
+            
+            print("\nNetwork Connection Type:")
+            print(result.stdout)
+            
+            if "Wi-Fi" in result.stdout or "Wireless" in result.stdout:
+                issues_found.append("Using Wi-Fi connection")
+                recommendations.append(
+                    "Use a wired Ethernet connection. WoL is more reliable over Ethernet."
+                )
+        except Exception as e:
+            print(f"Could not check network connection type: {e}")
+        
+        # Check Windows Fast Startup
+        try:
+            key_path = r"SYSTEM\CurrentControlSet\Control\Session Manager\Power"
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path) as key:
+                fast_startup = winreg.QueryValueEx(key, "HiberbootEnabled")[0]
+                print("\nFast Startup:", "Enabled" if fast_startup else "Disabled")
+                
+                if fast_startup:
+                    issues_found.append("Windows Fast Startup is enabled")
+                    recommendations.append(
+                        "Disable Fast Startup:\n"
+                        "1. Open Control Panel\n"
+                        "2. System and Security → Power Options\n"
+                        "3. Choose what the power buttons do\n"
+                        "4. Change settings that are currently unavailable\n"
+                        "5. Uncheck 'Turn on fast startup'"
+                    )
+        except Exception as e:
+            print(f"Could not check Fast Startup status: {e}")
+        
+        # Print issues and recommendations
+        if issues_found:
+            print("\n⚠️ Issues Found:")
+            for i, issue in enumerate(issues_found, 1):
+                print(f"{i}. {issue}")
+            
+            print("\n💡 Recommendations:")
+            for i, rec in enumerate(recommendations, 1):
+                print(f"{i}. {rec}\n")
+        else:
+            print("\n✅ No issues found! Your system appears to be properly configured for WoL.")
+        
+        print("\n📋 Additional Steps:")
+        print("1. Check BIOS/UEFI Settings:")
+        print("   - Enable 'Wake on LAN' or similar option")
+        print("   - Enable 'Power On by PCI-E' or similar")
+        print("   - Disable Deep Sleep mode")
+        print("\n2. Router Configuration:")
+        print("   - Enable UDP port forwarding for ports 7 and 9")
+        print("   - Allow broadcast packets")
+        print("   - If using port forwarding, forward to your PC's MAC address")
+        
+        input("\nPress Enter to continue...")
+
+    def configure_wol_settings(self):
+        """Configure all necessary Wake-on-LAN settings."""
+        print("\nConfiguring Wake-on-LAN Settings...")
+        print("=" * 50)
+        
+        try:
+            # Enable WoL settings using PowerShell (requires admin privileges)
+            wol_script = """
+            # Get the network adapter
+            $adapter = Get-NetAdapter | Where-Object {$_.Status -eq 'Up' -and $_.MediaType -eq '802.3'}
+            
+            if ($adapter) {
+                Write-Output "Configuring adapter: $($adapter.Name)"
+                
+                # Enable WoL in power management
+                $devicePath = $adapter.PnPDeviceID
+                $device = Get-PnpDevice | Where-Object { $_.InstanceId -eq $devicePath }
+                
+                # Registry path for the network adapter
+                $adapterId = ($adapter.InterfaceDescription -replace '[^a-zA-Z0-9]', '_')
+                $regPath = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Class\\{4d36e972-e325-11ce-bfc1-08002be10318}"
+                
+                Get-ChildItem $regPath | ForEach-Object {
+                    $instancePath = $_.PSPath
+                    if ((Get-ItemProperty -Path $instancePath).DriverDesc -eq $adapter.InterfaceDescription) {
+                        # Enable WoL settings
+                        Set-ItemProperty -Path $instancePath -Name "WolMagicPacket" -Value 1
+                        Set-ItemProperty -Path $instancePath -Name "WakeOnMagicPacket" -Value 1
+                        Set-ItemProperty -Path $instancePath -Name "PMARPOffload" -Value 1
+                        Set-ItemProperty -Path $instancePath -Name "PMNSOffload" -Value 1
+                        Set-ItemProperty -Path $instancePath -Name "WakeOnPattern" -Value 1
+                        Write-Output "Enabled Wake-on-LAN registry settings"
+                    }
+                }
+                
+                # Enable device to wake computer
+                $powerMgmt = Get-WmiObject MSPower_DeviceWakeEnable -Namespace root\\wmi | 
+                    Where-Object { $_.InstanceName -match $adapterId }
+                if ($powerMgmt) {
+                    $powerMgmt.Enable = $true
+                    $powerMgmt.Put()
+                }
+                
+                # Disable Fast Startup
+                $regPath = "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power"
+                Set-ItemProperty -Path $regPath -Name "HiberbootEnabled" -Value 0
+                Write-Output "Disabled Fast Startup"
+                
+                # Configure Power Settings
+                # Prevent sleep when plugged in
+                powercfg /change standby-timeout-ac 0
+                
+                # Enable wake timers
+                powercfg /setacvalueindex scheme_current sub_buttons pbuttonaction 0
+                powercfg /setacvalueindex scheme_current sub_none wakefromlan 1
+                powercfg /setactive scheme_current
+                
+                Write-Output "Power settings configured successfully"
+            } else {
+                Write-Output "No suitable network adapter found"
+            }
+            """
+            
+            print("\nAttempting to configure Wake-on-LAN settings (requires admin privileges)...")
+            result = subprocess.run(
+                ["powershell", "-Command", wol_script],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                print("\nSuccessfully configured Wake-on-LAN settings!")
+                print("\nSettings applied:")
+                print("✓ Enabled Wake on Magic Packet")
+                print("✓ Enabled Power Management ARP Offload")
+                print("✓ Enabled Power Management NS Offload")
+                print("✓ Enabled Wake on Pattern")
+                print("✓ Disabled Fast Startup")
+                print("✓ Configured Power Settings")
+                
+                print("\nAdditional steps required:")
+                print("1. Restart your computer for changes to take effect")
+                print("2. Enter BIOS/UEFI settings during restart and ensure:")
+                print("   - Power On By PCI-E/PCI is enabled")
+                print("   - Deep Sleep Control is disabled")
+                print("   - EuP/ErP Ready is disabled")
+            else:
+                print("\nError configuring settings. Make sure to run as administrator.")
+                print("Error details:")
+                print(result.stderr)
+            
+            input("\nPress Enter to continue...")
+            
+        except Exception as e:
+            print(f"\nError: {str(e)}")
+            print("Make sure to run the program as administrator.")
+            input("\nPress Enter to continue...")
 
 # Flask routes
 @app.route('/')

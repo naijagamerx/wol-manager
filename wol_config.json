@@ -1,0 +1,41 @@
+{
+    "system": {
+        "os": "Windows",
+        "os_version": "10.0.22621",
+        "computer_name": "NAIJAGAMERX"
+    },
+    "network_interfaces": [
+        {
+            "name": "{D199B93B-D7D8-4FB7-80D5-C4BFBFAD5C78}",
+            "mac_address": "2c:4d:54:cf:f7:c1",
+            "ipv4_address": "192.168.3.132",
+            "is_up": true,
+            "wol_support": true,
+            "wol_config_notes": [
+                "Network adapter found in registry",
+                "Netsh error: Command 'netsh interface ipv4 show config name=\"{D199B93B-D7D8-4FB7-80D5-C4BFBFAD5C78}\"' returned non-zero exit status 1."
+            ]
+        },
+        {
+            "name": "{021CE1B1-E24E-4389-93AD-A77DA9C621F3}",
+            "mac_address": "04:7f:0e:1f:5d:7c",
+            "ipv4_address": "N/A",
+            "is_up": false,
+            "wol_support": true,
+            "wol_config_notes": [
+                "Network adapter found in registry",
+                "Netsh error: Command 'netsh interface ipv4 show config name=\"{021CE1B1-E24E-4389-93AD-A77DA9C621F3}\"' returned non-zero exit status 1."
+            ]
+        },
+        {
+            "name": "{C95A9DAA-9C75-11EF-ADF5-806E6F6E6963}",
+            "mac_address": "",
+            "ipv4_address": "127.0.0.1",
+            "is_up": true,
+            "wol_support": true,
+            "wol_config_notes": [
+                "Netsh error: Command 'netsh interface ipv4 show config name=\"{C95A9DAA-9C75-11EF-ADF5-806E6F6E6963}\"' returned non-zero exit status 1."
+            ]
+        }
+    ]
+}

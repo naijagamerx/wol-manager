@@ -1,128 +1,149 @@
 # Wake-on-LAN Manager
 
-<div align="center">
+A comprehensive Wake-on-LAN (WoL) management tool that allows you to remotely wake computers, monitor network traffic, and configure WoL settings. Developed in collaboration with [Demo Homex](https://demohomex.com).
 
-![Wake-on-LAN Manager](https://img.shields.io/badge/Wake--on--LAN-Manager-blue)
-![Python](https://img.shields.io/badge/Python-3.8+-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+## Features
 
-</div>
+- 🖥️ **Complete WoL Management**
+  - Send Wake-on-LAN magic packets
+  - Monitor incoming WoL packets
+  - Configure network adapter WoL settings
+  - Check and verify BIOS/UEFI settings
 
-## 🌟 About
+- 🌐 **Network Tools**
+  - Display detailed network information
+  - Monitor network interfaces
+  - Web interface for remote access
+  - Real-time packet monitoring
 
-Wake-on-LAN Manager is a comprehensive tool for managing and monitoring Wake-on-LAN functionality on your network. It provides both a command-line interface and a web interface for sending WoL packets, monitoring network traffic, and configuring WoL settings.
+- ⚙️ **System Configuration**
+  - Automatic WoL settings configuration
+  - BIOS/UEFI settings checker
+  - Power management optimization
+  - Fast Startup control
 
-Developed in collaboration with [Demo Homex](https://demohomex.com), this tool aims to make Wake-on-LAN management accessible and efficient.
+## Requirements
 
-## ✨ Features
+- Windows OS
+- Python 3.8 or higher
+- Administrator privileges (for configuration)
+- Network adapter with Wake-on-LAN support
 
-- 📱 Web interface for remote access
-- 🖥️ Terminal-based menu interface
-- 📡 Real-time WoL packet monitoring
-- 🔧 Network adapter configuration
-- 📊 Comprehensive network information display
-- 🚀 Easy BIOS/UEFI setup guide
-
-## 🚀 Installation
+## Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/naijagamerx/wol-manager.git
-cd wol-manager
+git clone https://github.com/yourusername/wakeonlan.git
+cd wakeonlan
 ```
 
-2. Create a virtual environment:
+2. Create and activate a virtual environment:
 ```bash
 python -m venv .venv
-```
-
-3. Activate the virtual environment:
-```bash
-# Windows
 .venv\Scripts\activate
-
-# Linux/Mac
-source .venv/bin/activate
 ```
 
-4. Install dependencies:
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-## 💻 Usage
+## Usage
 
-Run the main script:
+### Running the Program
+
+Run with administrator privileges for full functionality:
 ```bash
 python wol_manager.py
 ```
 
-### Menu Options
+### Main Menu Options
 
 1. **Show Network Information**
    - Display detailed information about network interfaces
-   - View MAC addresses, IP addresses, and WoL support status
 
 2. **Enable Wake-on-LAN**
-   - Configure network adapters for WoL support
-   - Automatic Windows registry configuration
+   - Configure network adapter for WoL support
 
 3. **Send Wake-on-LAN Packet**
-   - Send magic packets to wake remote machines
-   - Support for custom broadcast addresses
+   - Send magic packets to wake remote computers
 
 4. **Start Packet Monitor**
    - Monitor incoming WoL packets
-   - Filter by MAC address
-   - Real-time packet analysis
 
 5. **Start Web Interface**
-   - Access WoL controls from any device
-   - Mobile-friendly interface
-   - Real-time status updates
+   - Access the tool through a web browser
 
-6. **BIOS/UEFI Setup Guide**
-   - Step-by-step configuration guide
-   - Vendor-specific instructions
-   - Troubleshooting tips
+6. **Configure BIOS/UEFI Settings Guide**
+   - Step-by-step guide for BIOS configuration
 
-## 🛠️ Configuration
+7. **Check WoL Configuration**
+   - Verify current WoL settings
 
-### Wake-on-LAN Settings
+8. **Check BIOS Settings**
+   - Display current BIOS and power settings
 
-1. **BIOS/UEFI Configuration**
-   - Enable "Wake-on-LAN" or "Power On by PCI-E"
-   - Enable "Network Stack"
-   - Save changes and restart
+9. **Configure All WoL Settings**
+   - Automatically configure all necessary settings
+   - Requires administrator privileges
 
-2. **Windows Configuration**
-   - Run as administrator
-   - Use the built-in configuration tool (Option 2)
-   - Verify settings in Device Manager
+### Configuring Wake-on-LAN
 
-### Network Requirements
+For WoL to work properly, ensure:
 
-- Ethernet connection (WoL may not work over Wi-Fi)
-- Router must allow broadcast packets
-- Target PC must be properly shut down (not hibernated)
+1. **Network Adapter Settings**
+   - Wake on Magic Packet enabled
+   - Power Management settings configured
+   - ARP and NS Offload enabled
 
-## 🤝 Contributing
+2. **BIOS/UEFI Settings**
+   - Power On By PCI-E/PCI enabled
+   - Deep Sleep Control disabled
+   - EuP/ErP Ready disabled
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+3. **Windows Settings**
+   - Fast Startup disabled
+   - Network adapter power management configured
+   - Wake timers enabled
 
-## 📝 License
+## Troubleshooting
+
+### Common Issues
+
+1. **Computer won't wake up**
+   - Verify BIOS settings
+   - Check network adapter configuration
+   - Ensure Fast Startup is disabled
+
+2. **Permission errors**
+   - Run the program as administrator
+   - Check Windows security settings
+
+3. **Network adapter not found**
+   - Verify adapter supports WoL
+   - Update network drivers
+   - Check physical connection
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Credits
+## Credits
 
-- Developed in collaboration with [Demo Homex](https://demohomex.com)
+- Developed by [Demo Homex](https://demohomex.com)
+- Wake-on-LAN implementation based on standard protocols
 - Special thanks to the open-source community
 
-## 📞 Support
+## Contact
 
-For support:
-- Visit [Demo Homex](https://demohomex.com)
-- Email: info@demohomex.com
-- Open an issue on [GitHub](https://github.com/naijagamerx/wol-manager/issues)
-- Author: [naijagamerx](https://github.com/naijagamerx)
+For support or inquiries:
+- Website: [https://demohomex.com](https://demohomex.com)
+- GitHub Issues: [Report a bug](https://github.com/yourusername/wakeonlan/issues)
