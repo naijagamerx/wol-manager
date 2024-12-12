@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wake-on-LAN Controller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .interface {
+            border-left: 4px solid #2196F3;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #fff;
+        }
+        .interface.active {
+            border-left-color: #4CAF50;
+        }
+        .interface.inactive {
+            border-left-color: #f44336;
+        }
+        .detail-row {
+            display: flex;
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-label {
+            flex: 0 0 120px;
+            font-weight: bold;
+            color: #666;
+        }
+        .detail-value {
+            flex: 1;
+            font-family: monospace;
+        }
+        button {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #1976D2;
+        }
+        .status {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            display: none;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .error {
+            background-color: #f44336;
+            color: white;
+        }
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Wake-on-LAN Controller</h1>
+        <div class="note">
+            <strong>How to use:</strong>
+            <ol>
+                <li>Find your active network interface (marked in green)</li>
+                <li>Note down the MAC Address and IP Address</li>
+                <li>Default WoL port is 9</li>
+                <li>Use these details when configuring WoL on your phone</li>
+            </ol>
+        </div>
+        <div id="status" class="status"></div>
+    </div>
+
+    <div class="card">
+        <h2>System Information</h2>
+        <div class="detail-row">
+            <div class="detail-label">Computer Name:</div>
+            <div class="detail-value">{{ network_info.system.computer_name }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">OS:</div>
+            <div class="detail-value">{{ network_info.system.os }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Network Interfaces</h2>
+        {% for interface in network_info.network_interfaces %}
+            {% if interface.mac_address != 'N/A' %}
+                <div class="interface {% if interface.is_up %}active{% else %}inactive{% endif %}">
+                    <h3>{{ interface.name }} {% if interface.is_up %}(Active){% else %}(Inactive){% endif %}</h3>
+                    <div class="detail-row">
+                        <div class="detail-label">MAC Address:</div>
+                        <div class="detail-value">{{ interface.mac_address }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">IP Address:</div>
+                        <div class="detail-value">{{ interface.ipv4_address }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">WoL Port:</div>
+                        <div class="detail-value">9 (Default)</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Status:</div>
+                        <div class="detail-value">{{ 'Active' if interface.is_up else 'Inactive' }}</div>
+                    </div>
+                    {% if interface.wol_support is defined %}
+                    <div class="detail-row">
+                        <div class="detail-label">WoL Support:</div>
+                        <div class="detail-value">{{ 'Yes' if interface.wol_support else 'No' }}</div>
+                    </div>
+                    {% endif %}
+                    <button onclick="sendWakeOnLAN('{{ interface.mac_address }}', '{{ interface.ipv4_address }}')">
+                        Wake Device
+                    </button>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <script>
+        function sendWakeOnLAN(macAddress, broadcast) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = 'Sending Wake-on-LAN packet...';
+            statusDiv.className = 'status';
+
+            fetch('/wake', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    mac_address: macAddress,
+                    broadcast: broadcast
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                statusDiv.innerHTML = data.terminal_output;
+                statusDiv.classList.add('success');
+            })
+            .catch(error => {
+                statusDiv.innerHTML = 'Error: ' + error.message;
+                statusDiv.classList.add('error');
+            });
+        }
+    </script>
+</body>
+</html>
